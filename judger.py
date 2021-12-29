@@ -2,13 +2,14 @@ import re
 import os
 import shutil
 from pathlib import Path
-import itertools
+# import itertools
 from collections import defaultdict
 import pandas as pd
 import argparse
-import IPython
-import subprocess
-from binascii import a2b_hex
+# import IPython
+# import subprocess
+import hashlib
+# from binascii import a2b_hex
 
 parser = argparse.ArgumentParser(description='judge')
 parser.add_argument('--hwid', type=str, help='homework id in playground dir', required=True)
@@ -16,14 +17,13 @@ args = parser.parse_args()
 
 
 def judge_list(filename_list: list):
-    proc = subprocess.Popen(['parallel', '-x', 'bash ./get_hash.sh {}'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    # proc = subprocess.Popen(['xargs', '-I{}', 'bash ./get_hash.sh {}'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    out,err = proc.communicate(input='\n'.join(filename_list).encode())
-    res = out.decode().split('\n')
-    source_codes = [(a2b_hex(x[:128].strip()), x[128:].strip()) for x in res]
     dct = defaultdict(list)
-    for k,v in source_codes:
-        dct[k].append(v)
+    for filename in filename_list:
+        hasher = hashlib.sha512()
+        for line in open(filename, 'r'):
+            bin = re.sub(r'[ \t\n\r]', '', line).encode()
+            hasher.update(bin)
+        dct[hasher.digest()].append(filename)
     ret = [dct[k] for k in dct if len(dct[k]) > 1]
     # IPython.embed()
     return ret
