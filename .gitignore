@@ -1,6 +1,11 @@
 playground
+
 .mypy_cache
-*.xls
-*.tar.gz
-*.csv
 .vscode
+.idea
+
+*.xls
+*.xlsx
+*.tar.gz
+*.zip
+*.csv
