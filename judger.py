@@ -1,20 +1,18 @@
-import re
-import os
-import shutil
-from pathlib import Path
-# import itertools
-from collections import defaultdict
-import pandas as pd
 import argparse
-# import IPython
-# import subprocess
 import hashlib
-# from binascii import a2b_hex
-from typing import TypedDict, Optional
+import os
+import re
+import shutil
+from collections import defaultdict
+from pathlib import Path
+from typing import Optional, TypedDict
+
+import pandas as pd
+
 
 class ResultType(TypedDict):
     score: float
-    ac_subid: int
+    ac_subid: Optional[int]
     name: str
 
 
@@ -43,12 +41,12 @@ def main():
     BASE_SUFFIX = "_base"
     COPIED_SUFFIX = "_copied"
     COMMENT_SUFFIX = "_comment"
-    TA_USERIDS = [137238, 90322, 935617, 1106922, 936531, 810106, 1256347, 1145420]
+    TA_USERIDS = [6060, 137238, 90322, 935617, 1106922, 936531, 810106, 6340, 1145420, 1256347]
 
     pattern = r"([0-9]*)_([0-9]*)_([A-Z]*)_([0-9]*)\((.*)\)\.py3"
 
 
-    xuanke = pd.read_excel('选课名单.xls',dtype=str)
+    xuanke = pd.read_excel('选课名单.xls', dtype=str)
 
     score_map = {
         'AC' : 2.0,
@@ -69,15 +67,15 @@ def main():
         if name.endswith(".py3"):
             match = re.match(pattern, name)
             if match is None: continue
-            SUBID, PROBID, STATUS, USERID, USERNAME = match.groups()
-            SUBID = int(SUBID)
-            USERID = int(USERID)
-            if USERID in TA_USERIDS: continue
-            dic[PROBID][USERID][STATUS].append((SUBID, name))
+            subid, probid, status, userid, username = match.groups()
+            subid = int(subid)
+            userid = int(userid)
+            if userid in TA_USERIDS: continue
+            dic[probid][userid][status].append((subid, name))
             for xuehao in xuanke['学号']:
-                if xuehao in USERNAME:
-                    xuehao_to_userid[xuehao] = USERID
-                    userid_to_xuehao[USERID] = xuehao
+                if xuehao in username:
+                    xuehao_to_userid[xuehao] = userid
+                    userid_to_xuehao[userid] = xuehao
                     break
 
     results: dict[str, dict[int, ResultType]] = defaultdict(lambda: defaultdict(lambda: ResultType(score=0.0, ac_subid=0, name="")))
@@ -85,14 +83,14 @@ def main():
     for prob_id, userid_2_status_subid in dic.items():
         for userid, status_2_subid in userid_2_status_subid.items():
             max_score = 0.0
-            stat = (-1, '')
+            stat = (None, '')
             for status, subid in status_2_subid.items():
                 if status == 'AC': stat = max(subid)
                 max_score = max(max_score, score_map[status])
             results[prob_id][userid] = ResultType(score=max_score, ac_subid=stat[0], name=stat[1])
 
     prob_ids = sorted(results.keys())
-    df = pd.DataFrame(columns=[x+BASE_SUFFIX for x in prob_ids] + [x+COPIED_SUFFIX for x in prob_ids] + [x+COMMENT_SUFFIX for x in prob_ids], index=xuanke.index)
+    df = pd.DataFrame(columns=[x+y for y in (BASE_SUFFIX, COPIED_SUFFIX, COMMENT_SUFFIX) for x in prob_ids], index=xuanke.index)
     df = xuanke.merge(df, left_index=True, right_index=True)
 
     prob_to_filelist = defaultdict(list)
@@ -100,8 +98,7 @@ def main():
 
     for prob_id, userid_2_info in results.items():
         for userid, info in userid_2_info.items():
-            if info['ac_subid'] == -1: continue
-            if userid not in userid_to_xuehao: continue
+            if (info['ac_subid'] is None) or (userid not in userid_to_xuehao): continue
             src_path = os.path.join(SRC_DIR, info['name'])
             prob_to_filelist[prob_id].append(src_path)
             code = "".join(open(src_path).readlines())
@@ -127,9 +124,9 @@ def main():
                 final_name = name.split('/')[-1]
                 match = re.match(pattern, final_name)
                 if match is None: continue
-                SUBID, PROBID, STATUS, USERID, USERNAME = match.groups()
-                USERID = int(USERID)
-                df.loc[df['学号'] == userid_to_xuehao[USERID],  prob_id+COPIED_SUFFIX] = "yes-%03d" % i
+                subid, probid, status, userid, username = match.groups()
+                userid = int(userid)
+                df.loc[df['学号'] == userid_to_xuehao[userid],  prob_id+COPIED_SUFFIX] = "yes-%03d" % i
                 
                 dst_dir = os.path.join(prob_dst_dir, "%03d" % i)
                 Path(dst_dir).mkdir(exist_ok=True, parents=True)
