@@ -1,8 +1,13 @@
+#!/bin/bash
+
+#./gen_tar.sh 18506
+
 name="result"
 files=""
-for i in hw1 hw2 hw3
+args=("$@")
+for i in $args
 do
-    files="$files playground/${i}/copied_code ${i}_result.csv"
+    files="$files playground/${i}_copied_code ${i}_result.csv"
     name="$name-$i"
 done
 
