@@ -33,7 +33,7 @@ def judge_list(filename_list: list):
 
 def main():
     parser = argparse.ArgumentParser(description='judge')
-    parser.add_argument('--hwid', type=str, help='homework id in playground dir', required=True)
+    parser.add_argument('hwid', type=str, help='homework id in playground dir')
     args = parser.parse_args()
 
 
