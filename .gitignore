@@ -1,4 +1,7 @@
-playground
+!playground/
+
+playground/*
+!playground/README.md
 
 .mypy_cache
 .vscode
