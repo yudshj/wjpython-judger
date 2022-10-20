@@ -144,7 +144,7 @@ def main():
         df[col] = df[col].fillna(0.0)
 
 
-    df.to_csv(f'{HW_ID}_result.csv')
+    df.to_csv(f'{HW_ID}_result.csv', index=False)
 
 
 if __name__ == '__main__':
