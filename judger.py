@@ -51,12 +51,12 @@ def main():
     score_map = {
         'AC' : 2.0,
         'PE' : 1.0,
-        'WA' : 0.1,
+        'WA' : 1.0,
         'RE' : 0.0,
         'CE' : 0.0,
-        'TLE' : 0.1,
-        'MLE' : 0.1,
-        'WT' : 0.1,
+        'TLE' : 1.0,
+        'MLE' : 1.0,
+        'WT' : 0.0,
     }
 
     lst = os.listdir(SRC_DIR)
