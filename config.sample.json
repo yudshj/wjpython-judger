@@ -1,0 +1,8 @@
+{
+    "skip_spaces": true,
+    "skip_comments": true,
+    "ta_userids": [6060, 137238, 90322, 935617, 1106922, 936531, 810106, 6340, 1145420, 1256347],
+    "base_suffix": "_base",
+    "copied_suffix": "_copied",
+    "comment_suffix": "_comment"
+}

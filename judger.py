@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -10,6 +11,23 @@ from typing import Optional, TypedDict
 import pandas as pd
 
 
+parser = argparse.ArgumentParser(description='judge')
+parser.add_argument('hwid', type=str, help='homework id in playground dir')
+args = parser.parse_args()
+
+config = json.load(open("config.json", "r", encoding="utf-8"))
+
+BASE_SUFFIX = config['base_suffix']
+COPIED_SUFFIX = config['copied_suffix']
+COMMENT_SUFFIX = config['comment_suffix']
+TA_USERIDS = config['ta_userids']
+SKIP_COMMENTS = config['skip_comments']
+SKIP_SPACES = config['skip_spaces']
+
+HW_ID = args.hwid
+SRC_DIR = f"./playground/{HW_ID}/"
+DST_DIR = f"./playground/{HW_ID}_copied_code/"
+
 class ResultType(TypedDict):
     score: float
     ac_subid: Optional[int]
@@ -19,29 +37,31 @@ class ResultType(TypedDict):
 def judge_list(filename_list: list):
     dct = defaultdict(list)
     for filename in filename_list:
-        hasher = hashlib.sha512()
-        for line in open(filename, 'r'):
-            bin = re.sub(r'[ \t\n\r]', '', line).encode()
-            hasher.update(bin)
-        dct[hasher.digest()].append(filename)
+        text = open(filename, "r", encoding="utf-8").read()
+
+        if SKIP_COMMENTS:
+            # remove all comments from python3 file
+            text = re.sub(r"#.*", "", text)
+            text = re.sub(r'""".*?"""', "", text, flags=re.DOTALL)
+            text = re.sub(r"'''.*?'''", "", text, flags=re.DOTALL)
+
+        if SKIP_SPACES:
+            # remove all spaces
+            text = re.sub(r"\s+", "", text)
+
+        hash_digest = hashlib.sha512(text.encode("utf-8")).hexdigest()
+        dct[hash_digest].append(filename)
+
     ret = [dct[k] for k in dct if len(dct[k]) > 1]
     # IPython.embed()
     return ret
 
 
 def main():
-    parser = argparse.ArgumentParser(description='judge')
-    parser.add_argument('hwid', type=str, help='homework id in playground dir')
-    args = parser.parse_args()
-
-
-    HW_ID = args.hwid
-    SRC_DIR = f"./playground/{HW_ID}/"
-    DST_DIR = f"./playground/{HW_ID}_copied_code/"
-    BASE_SUFFIX = "_base"
-    COPIED_SUFFIX = "_copied"
-    COMMENT_SUFFIX = "_comment"
-    TA_USERIDS = [6060, 137238, 90322, 935617, 1106922, 936531, 810106, 6340, 1145420, 1256347]
+    dst_path = Path(DST_DIR)
+    if dst_path.exists():
+        shutil.rmtree(dst_path)
+    dst_path.mkdir(parents=True)
 
     pattern = r"([0-9]*)_([0-9]*)_([A-Z]*)_([0-9]*)\((.*)\)\.py3"
 

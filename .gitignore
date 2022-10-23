@@ -3,6 +3,8 @@
 playground/*
 !playground/README.md
 
+config.json
+
 .mypy_cache
 .vscode
 .idea
